@@ -1,4 +1,6 @@
 #!/usr/bin/python
+# imported from https://github.com/FabianPonce/community.aws/commit/028f7791c77d89b074bc9cabaa913008f16ff959
+#   in order to fix lack of support of Fargate ephemeralStorage configuration 
 # This file is part of Ansible
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
@@ -663,7 +665,7 @@ class EcsTaskManager:
         except botocore.exceptions.ClientError:
             return None
 
-    def register_task(self, family, task_role_arn, execution_role_arn, network_mode, container_definitions, volumes, launch_type, cpu, memory):
+    def register_task(self, family, task_role_arn, execution_role_arn, network_mode, container_definitions, volumes, launch_type, cpu, memory, ephemeral_storage):
         validated_containers = []
 
         # Ensures the number parameters are int as required by boto
@@ -700,6 +702,10 @@ class EcsTaskManager:
             params['requiresCompatibilities'] = [launch_type]
         if execution_role_arn:
             params['executionRoleArn'] = execution_role_arn
+        if ephemeral_storage:
+            params['ephemeralStorage'] = dict(
+                sizeInGiB=ephemeral_storage,
+            )
 
         try:
             response = self.ecs.register_task_definition(**params)
@@ -759,7 +765,8 @@ def main():
         volumes=dict(required=False, type='list', elements='dict'),
         launch_type=dict(required=False, choices=['EC2', 'FARGATE']),
         cpu=dict(),
-        memory=dict(required=False, type='str')
+        memory=dict(required=False, type='str'),
+        ephemeral_storage=dict(required=False,type='int')
     )
 
     module = AnsibleAWSModule(argument_spec=argument_spec,
@@ -770,6 +777,14 @@ def main():
     task_to_describe = None
     task_mgr = EcsTaskManager(module)
     results = dict(changed=False)
+
+    ephemeral_storage = module.params['ephemeral_storage']
+    if ephemeral_storage:
+        if module.params['launch_type'] != 'FARGATE':
+            module.fail_json(msg='ephemeral_storage only supported on FARGATE')
+
+        if ephemeral_storage < 21 or ephemeral_storage > 200:
+            module.fail_json(msg='ephemeral_storage should be a size between 20 and 200 gb')
 
     if module.params['launch_type']:
         if not module.botocore_at_least('1.8.4'):

@@ -1,4 +1,4 @@
-namespace: community
+namespace: toast
 name: aws
 version: 1.5.0
 readme: README.md

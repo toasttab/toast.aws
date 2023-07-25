@@ -958,7 +958,8 @@ def main():
                                                                    volumes,
                                                                    module.params['launch_type'],
                                                                    module.params['cpu'],
-                                                                   module.params['memory'])
+                                                                   module.params['memory'],
+                                                                   module.params['ephemeral_storage'])
             results['changed'] = True
 
     elif module.params['state'] == 'absent':

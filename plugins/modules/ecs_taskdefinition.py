@@ -766,7 +766,7 @@ def main():
         launch_type=dict(required=False, choices=['EC2', 'FARGATE']),
         cpu=dict(),
         memory=dict(required=False, type='str'),
-        ephemeral_storage=dict(required=False,type='int')
+        ephemeral_storage=dict(required=False, default=20, type='int')
     )
 
     module = AnsibleAWSModule(argument_spec=argument_spec,
